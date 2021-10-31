@@ -4,11 +4,11 @@ module Data.ContinuedFraction
 
     -- * ContFraction construction
   , (+/)
+  , fromRatio
 
     -- * Converter functions
   , toList
   , toRatio
-  , fromRatio
 
     -- * Approximation
   , approx
@@ -21,8 +21,10 @@ module Data.ContinuedFraction
   , cut
   , cutWhile
 
-    -- * Infinite continued fraction generators
+    -- * Infinite continued fraction generators & constants
   , glenn
+  , bessel0
+  , bessel1
   ) where
 
 import           Data.Function
@@ -106,3 +108,9 @@ cutWhile f = fromList . (\lst -> case lst of
 
 glenn :: (Enum a, Num a) => a -> ContFraction a
 glenn i = i +/ ([1 ..] >>= \k -> [1, k * i, 1])
+
+bessel0 :: (Enum a, Num a) => ContFraction a
+bessel0 = 0 +/ [1 ..]
+
+bessel1 :: (Enum a, Num a) => ContFraction a
+bessel1 = 1 +/ [2 ..]
