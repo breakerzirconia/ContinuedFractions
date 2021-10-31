@@ -7,7 +7,6 @@ module Data.ContinuedFraction
 
     -- * Converter functions
   , toList
-  , fromList
   , toRatio
   , fromRatio
 
@@ -26,6 +25,7 @@ module Data.ContinuedFraction
   , glenn
   ) where
 
+import           Data.Function
 import           Data.Ratio
 
 infixr 5 :+/
@@ -43,6 +43,10 @@ instance (Show a) => Show (ContFraction a) where
   show (wh :+/ Inf) = show [wh]
   show cf = let (wh, fr) = break (== ',') . show $ toList cf
             in wh ++ ';' : tail fr
+
+instance Functor ContFraction where
+  fmap f Inf         = Inf
+  fmap f (wh :+/ fr) = f wh :+/ fmap f fr
 
 toList :: ContFraction a -> [a]
 toList Inf         = []
@@ -66,6 +70,9 @@ fromRatio r = go (numerator r) (denominator r)
 approx :: (Integral a, Floating b) => ContFraction a -> b
 approx = (\r -> fromIntegral (numerator r) / fromIntegral (denominator r)) . toRatio
 
+instance Integral a => Ord (ContFraction a) where
+  compare = compare `on` toRatio
+
 instance Integral a => Num (ContFraction a) where
   cf1 + cf2 = fromRatio $ toRatio cf1 + toRatio cf2
   cf1 - cf2 = fromRatio $ toRatio cf1 - toRatio cf2
@@ -73,6 +80,14 @@ instance Integral a => Num (ContFraction a) where
   abs = fromRatio . abs . toRatio
   signum = fromRatio . signum . toRatio
   fromInteger x = fromInteger x +/ []
+
+instance Integral a => Fractional (ContFraction a) where
+  cf1 / cf2 = fromRatio $ toRatio cf1 / toRatio cf2
+  recip = fromRatio . recip . toRatio
+  fromRational = fmap fromInteger . fromRatio
+
+instance Integral a => Real (ContFraction a) where
+  toRational = (\r -> toInteger (numerator r) % toInteger (denominator r)) . toRatio
 
 cycleCFTerms :: a -> [a] -> ContFraction a
 cycleCFTerms wh frs = wh +/ cycle frs
