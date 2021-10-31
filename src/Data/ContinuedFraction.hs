@@ -5,6 +5,8 @@ module Data.ContinuedFraction
     -- * ContFraction construction
   , (+/)
   , fromRatio
+  , withKOp
+  , withKOpInfinite
 
     -- * Converter functions
   , toList
@@ -39,6 +41,30 @@ data ContFraction a
 infix 5 +/
 (+/) :: a -> [a] -> ContFraction a
 wh +/ fr = wh :+/ fromList fr
+
+kOp :: (Enum a, Integral a)
+    => a                    -- ^ The number of terms to be generated
+    -> (a -> a)             -- ^ The generator function
+    -> ContFraction a
+kOp n f = fromList . fmap f $ [1 .. n]
+
+withKOp :: (Enum a, Integral a)
+        => a                    -- ^ The whole part
+        -> a                    -- ^ The number of terms to be generated
+        -> (a -> a)             -- ^ The generator function
+        -> ContFraction a
+withKOp wh n f = wh :+/ kOp n f
+
+kOpInfinite :: (Enum a, Integral a)
+            => (a -> a)             -- ^ The generator function
+            -> ContFraction a
+kOpInfinite f = fromList . fmap f $ [1 ..]
+
+withKOpInfinite :: (Enum a, Integral a)
+                => a                    -- ^ The whole part
+                -> (a -> a)             -- ^ The generator function
+                -> ContFraction a
+withKOpInfinite wh f = wh :+/ kOpInfinite f
 
 instance (Show a) => Show (ContFraction a) where
   show Inf          = error "Data.ContinuedFraction: Infinity"
@@ -81,7 +107,7 @@ instance Integral a => Num (ContFraction a) where
   cf1 * cf2 = fromRatio $ toRatio cf1 * toRatio cf2
   abs = fromRatio . abs . toRatio
   signum = fromRatio . signum . toRatio
-  fromInteger x = fromInteger x +/ []
+  fromInteger x = fromInteger x :+/ Inf
 
 instance Integral a => Fractional (ContFraction a) where
   cf1 / cf2 = fromRatio $ toRatio cf1 / toRatio cf2
@@ -106,11 +132,14 @@ cutWhile f = fromList . (\lst -> case lst of
   []      -> error "Data.ContinuedFraction: Infinity"
   (h : t) -> h : takeWhile f t) . toList
 
-glenn :: (Enum a, Num a) => a -> ContFraction a
-glenn i = i +/ ([1 ..] >>= \k -> [1, k * i, 1])
+glenn :: (Enum a, Integral a) => a -> ContFraction a
+glenn x = withKOpInfinite x (\i ->
+  if i `mod` 3 == 2
+  then x * (i `div` 3 + 1)
+  else 1)
 
-bessel0 :: (Enum a, Num a) => ContFraction a
-bessel0 = 0 +/ [1 ..]
+bessel0 :: (Enum a, Integral a) => ContFraction a
+bessel0 = withKOpInfinite 0 id
 
-bessel1 :: (Enum a, Num a) => ContFraction a
-bessel1 = 1 +/ [2 ..]
+bessel1 :: (Enum a, Integral a) => ContFraction a
+bessel1 = withKOpInfinite 1 (+1)
